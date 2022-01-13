@@ -159,7 +159,7 @@ def display_route(id):
         "command": "display_image",
         "location": f"{UPLOAD_FOLDER}{filename_from_id(int(id))}",
     }
-    time.sleep(0.2)
+    time.sleep(0.5)
     response = jsonify(f"You display {id}")
     _publisher.send_json(data)
     response.headers.add('Access-Control-Allow-Origin', '*')
