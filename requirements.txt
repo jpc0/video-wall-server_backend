@@ -16,5 +16,7 @@ pylint==2.12.2
 pyzmq==22.3.0
 six==1.16.0
 toml==0.10.2
+typing-extensions==4.0.1
+uWSGI==2.0.20
 Werkzeug==2.0.2
 wrapt==1.13.3
