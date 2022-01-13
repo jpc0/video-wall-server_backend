@@ -1,7 +1,10 @@
+import time
 import os
 import json
-from flask import Flask, request, redirect, send_from_directory
+from urllib import response
+from flask import Flask, Response, request, redirect, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
+import zmq
 
 
 UPLOAD_FOLDER = '/srv/video_wall_server_images/'
@@ -45,7 +48,6 @@ def update_all_files():
     for i in all_files:
         if not i:
             continue
-        print(f"{i} is here")
         if not (i.file_path in all_files_list):
             all_files.remove(i)
 
@@ -57,9 +59,7 @@ def allowed_file(filename):
 
 def filename_from_id(id: int):
     global all_files
-    print(all_files)
     for i in all_files:
-        print(f"Comparing {i.id} to {id}")
         if i.id == id:
             return i.file_path
 
@@ -72,81 +72,112 @@ def default_route():
 @app.route("/upload", methods=["POST"])
 def upload_route():
     if 'file' not in request.files:
-        return json.dumps({
+        response = jsonify({
             "version": "0.1.0",
             "message": "info",
             "content": [
                 "No file submitted"
             ]
         })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
     file = request.files['file']
     # If the user does not select a file, the browser submits an
     # empty file without a filename.
     if file.filename == '':
-        return json.dumps({
+        response = jsonify({
             "version": "0.1.0",
             "message": "info",
             "content": [
                 "No file selected"
             ]
         })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return json.dumps({
+        response = jsonify({
             "version": "0.1.0",
             "message": "info",
             "content": [
                 "Success"
             ]
         })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
 
-    return json.dumps({
+    response = jsonify({
         "version": "0.1.0",
         "message": "info",
         "content": [
             "Invalid file type submitted"
         ]
     })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 
 @app.route("/get_all", methods=["GET"])
 def get_all_route():
     update_all_files()
     if all_files:
-        return json.dumps({
+        response = jsonify({
             "version": "0.1.0",
             "message": "all_files",
             "content": list(map(lambda i: dict(i), all_files))
         })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
     else:
-        return json.dumps({
+        response = jsonify({
             "version": "0.1.0",
             "message": "info",
             "content": [
                 "No Files uploaded"
             ]
         })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
 
 
-@app.route("/get/<id>", methods=["GET"])
-def get_route(id):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename_from_id(int(id)))
+@app.route("/get/<filename>", methods=["GET"])
+def get_route(filename):
+    response = send_from_directory(
+        app.config["UPLOAD_FOLDER"], filename)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 
-@ app.route("/display/<id>", methods=["POST"])
+@app.route("/display/<id>", methods=["GET"])
 def display_route(id):
-    return f"You display {id}"
+    context = zmq.Context()
+    _publisher = context.socket(zmq.PUB)
+    _publisher.bind("tcp://*:7000")
+    data = {
+        "version": "0.1.0",
+        "command": "display_image",
+        "location": f"{UPLOAD_FOLDER}{filename_from_id(int(id))}",
+    }
+    time.sleep(0.2)
+    response = jsonify(f"You display {id}")
+    _publisher.send_json(data)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    _publisher.close()
+    context.term()
+    return response
 
 
-@ app.route("/delete/<id>", methods=["DELETE"])
+@app.route("/delete/<id>", methods=["GET"])
 def delete_route(id):
     os.remove(os.path.join(
         app.config['UPLOAD_FOLDER'], filename_from_id(int(id))))
-    return json.dumps({
+    response = jsonify({
         "version": "0.1.0",
         "message": "info",
         "content": [
             f"You deleted {id}"
         ]
     })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
