@@ -152,19 +152,40 @@ def get_route(filename):
 @app.route("/display/<id>", methods=["GET"])
 def display_route(id):
     context = zmq.Context()
-    _publisher = context.socket(zmq.PUB)
-    _publisher.bind("tcp://*:7000")
+    _requester = context.socket(zmq.REQ)
+    _requester.connect("tcp://127.0.0.1:9091")
     data = {
         "version": "0.1.0",
         "command": "display_image",
         "location": f"{UPLOAD_FOLDER}{filename_from_id(int(id))}",
     }
-    time.sleep(0.5)
-    response = jsonify(f"You display {id}")
-    _publisher.send_json(data)
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    _publisher.close()
+    _requester.send_json(data)
+    response = jsonify(_requester.recv_json())
+    _requester.close()
     context.term()
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
+
+
+@app.route("/display_many", methods=["GET"])
+def display_many_route():
+    context = zmq.Context()
+    _requester = context.socket(zmq.REQ)
+    _requester.connect("tcp://127.0.0.1:9091")
+    data = {
+        "version": "0.1.0",
+        "command": "display_image_loop",
+        "loop_time": request.args.get('time', type=int),
+        "locations": [],
+    }
+
+    for id in request.args.get('ids').split(','):
+        data["locations"].append(f"{UPLOAD_FOLDER}{filename_from_id(int(id))}")
+    _requester.send_json(data)
+    response = jsonify(_requester.recv_json())
+    _requester.close()
+    context.term()
+    response.headers.add('Access-Control-Allow-Origin', '*')
     return response
 
 
