@@ -189,6 +189,31 @@ def display_many_route():
     return response
 
 
+@app.route("/adjust_color", methods=["GET"])
+def adjust_color_route():
+    context = zmq.Context()
+    _requester = context.socket(zmq.REQ)
+    _requester.connect("tcp://127.0.0.1:9091")
+
+    print(request.args.get('attribute'))
+    print(request.args.get('channel'))
+    print(request.args.get('value'))
+
+    data = {
+        "version": "0.1.0",
+        "command": "adjust_color",
+        "attribute": request.args.get('attribute'),
+        "channel": request.args.get('channel'),
+        "value": request.args.get("value", type=float),
+    }
+    _requester.send_json(data)
+    response = jsonify(_requester.recv_jsosn())
+    _requester.close()
+    context.term()
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
+
+
 @app.route("/delete/<id>", methods=["GET"])
 def delete_route(id):
     os.remove(os.path.join(
