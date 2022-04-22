@@ -41,7 +41,7 @@ def update_all_files():
     for i in all_files_list:
         if image_in_list(i):
             continue
-        all_files.append(ImageFileData(randint(), i))
+        all_files.append(ImageFileData(randint(1, 1000000), i))
     for i in all_files:
         if not i:
             continue
