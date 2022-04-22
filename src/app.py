@@ -1,4 +1,5 @@
 import os
+from random import randint
 from dataclasses import dataclass
 from flask import Flask, Response, request, redirect, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
@@ -34,12 +35,13 @@ def image_in_list(image: str) -> bool:
 
 
 def update_all_files():
-    global all_files, all_files_list
+    global all_files
+    global all_files_list
     all_files_list = os.listdir(app.config['UPLOAD_FOLDER'])
     for i in all_files_list:
         if image_in_list(i):
             continue
-        all_files.append(ImageFileData(all_files_list.index(i) + 1, i))
+        all_files.append(ImageFileData(randint(), i))
     for i in all_files:
         if not i:
             continue
