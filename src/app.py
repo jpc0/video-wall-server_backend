@@ -54,10 +54,10 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def filename_from_id(id: int):
+def filename_from_id(id_: int):
     global all_files
     for i in all_files:
-        if i.id == id:
+        if i.id == id_:
             return i.file_path
 
 
@@ -238,8 +238,20 @@ def adjust_color_route():
 
 @app.route("/delete/<id_>", methods=["GET"])
 def delete_route(id_):
+    filename = filename_from_id(int(id_))
+    if not filename:
+        res = jsonify({
+            "version": "0.1.0",
+            "message": "info",
+            "content": [
+                "No files selected"
+            ]
+        })
+        res.headers.add('Access-Control-Allow-Origin', '*')
+        return res
+
     os.remove(os.path.join(
-        app.config['UPLOAD_FOLDER'], filename_from_id(int(id_))))
+        app.config['UPLOAD_FOLDER'], filename))
     res = jsonify({
         "version": "0.1.0",
         "message": "info",
