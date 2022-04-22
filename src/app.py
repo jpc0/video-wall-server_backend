@@ -146,7 +146,7 @@ def get_route(filename):
     return res
 
 
-@app.route("/display/<id>", methods=["GET"])
+@app.route("/display/<id_>", methods=["GET"])
 def display_route(id_):
     if not filename_from_id(int(id_)):
         res = jsonify({
@@ -236,7 +236,7 @@ def adjust_color_route():
     return res
 
 
-@app.route("/delete/<id>", methods=["GET"])
+@app.route("/delete/<id_>", methods=["GET"])
 def delete_route(id_):
     os.remove(os.path.join(
         app.config['UPLOAD_FOLDER'], filename_from_id(int(id_))))
